@@ -1,0 +1,159 @@
+databaseChangeLog:
+- changeSet:
+    id: 1
+    author: sergio
+    changes:
+    - createTable:
+        tableName: credentials
+        columns:
+        - column:
+            name: id
+            type: integer
+            autoIncrement: true
+            constraints:
+              primaryKey: true
+              nullable: false
+        - column:
+            name: password
+            type: varchar(255)
+            constraints:
+              nullable: false
+    - createTable:
+        tableName: credentials_backup
+        columns:
+        - column:
+            name: id
+            type: integer
+            autoIncrement: true
+            constraints:
+              primaryKey: true
+              nullable: false
+        - column:
+            name: password
+            type: varchar(255)
+            constraints:
+              nullable: false
+- changeSet:
+    id: 2
+    author: sergio
+    changes:
+    - insert:
+        tableName: credentials
+        columns:
+        - column:
+            name: password
+            value: pass1
+    - insert:
+        tableName: credentials
+        columns:
+        - column:
+            name: password
+            value: pass2
+    - insert:
+        tableName: credentials
+        columns:
+        - column:
+            name: password
+            value: pass3
+    - insert:
+        tableName: credentials
+        columns:
+        - column:
+            name: password
+            value: pass4
+    - insert:
+        tableName: credentials
+        columns:
+        - column:
+            name: password
+            value: pass5
+    - insert:
+        tableName: credentials
+        columns:
+        - column:
+            name: password
+            value: pass6
+    - insert:
+        tableName: credentials
+        columns:
+        - column:
+            name: password
+            value: pass7
+    - insert:
+        tableName: credentials
+        columns:
+        - column:
+            name: password
+            value: pass8
+    - insert:
+        tableName: credentials
+        columns:
+        - column:
+            name: password
+            value: pass9
+    - insert:
+        tableName: credentials
+        columns:
+        - column:
+            name: password
+            value: pass10
+    - insert:
+        tableName: credentials
+        columns:
+        - column:
+            name: password
+            value: pass11
+    - insert:
+        tableName: credentials
+        columns:
+        - column:
+            name: password
+            value: pass12
+    - insert:
+        tableName: credentials
+        columns:
+        - column:
+            name: password
+            value: pass13
+    - insert:
+        tableName: credentials
+        columns:
+        - column:
+            name: password
+            value: pass14
+    - insert:
+        tableName: credentials
+        columns:
+        - column:
+            name: password
+            value: pass15
+    - insert:
+        tableName: credentials
+        columns:
+        - column:
+            name: password
+            value: pass16
+    - insert:
+        tableName: credentials
+        columns:
+        - column:
+            name: password
+            value: pass17
+    - insert:
+        tableName: credentials
+        columns:
+        - column:
+            name: password
+            value: pass18
+    - insert:
+        tableName: credentials
+        columns:
+        - column:
+            name: password
+            value: pass19
+    - insert:
+        tableName: credentials
+        columns:
+        - column:
+            name: password
+            value: pass20
