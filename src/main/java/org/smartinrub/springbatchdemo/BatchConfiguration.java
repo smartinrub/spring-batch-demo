@@ -27,7 +27,7 @@ public class BatchConfiguration {
 
     private static final String SQL_SELECT_QUERY = "SELECT * FROM credentials";
     private static final String SQL_UPDATE_QUERY = "UPDATE credentials SET password = :password WHERE id = :id ";
-    public static final String SQL_INSERT_QUERY = "INSERT INTO credentials_backup VALUES(:id, :password)";
+    private static final String SQL_INSERT_QUERY = "INSERT INTO credentials_backup VALUES(:id, :password)";
 
     private final JobBuilderFactory jobBuilderFactory;
     private final StepBuilderFactory stepBuilderFactory;
