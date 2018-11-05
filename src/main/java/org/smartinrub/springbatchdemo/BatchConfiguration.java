@@ -51,7 +51,7 @@ public class BatchConfiguration {
     public JdbcBatchItemWriter<Credentials> writer1(DataSource dataSource) {
         return new JdbcBatchItemWriterBuilder<Credentials>()
                 .itemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<>())
-                .sql(SQL_UPDATE_QUERY)
+                .sql(SQL_INSERT_QUERY)
                 .dataSource(dataSource)
                 .build();
     }
@@ -60,38 +60,38 @@ public class BatchConfiguration {
     public JdbcBatchItemWriter<Credentials> writer2(DataSource dataSource) {
         return new JdbcBatchItemWriterBuilder<Credentials>()
                 .itemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<>())
-                .sql(SQL_INSERT_QUERY)
+                .sql(SQL_UPDATE_QUERY)
                 .dataSource(dataSource)
                 .build();
     }
 
-    @Bean
-    public Job credentialsJob(JobCompletionNotificationListener listener, Step step1, Step step2) {
-        return jobBuilderFactory.get("credentialsJob")
-                .incrementer(new RunIdIncrementer())
-                .listener(listener)
-                .start(step1)
-                .next(step2)
-                .preventRestart()
-                .build();
-    }
+@Bean
+public Job credentialsJob(JobCompletionNotificationListener listener, Step step1, Step step2) {
+    return jobBuilderFactory.get("credentialsJob")
+            .incrementer(new RunIdIncrementer())
+            .listener(listener)
+            .start(step1)
+            .next(step2)
+            .preventRestart()
+            .build();
+}
 
     @Bean
-    public Step step1(JdbcBatchItemWriter<Credentials> writer2, JdbcCursorItemReader<Credentials> reader) {
+    public Step step1(JdbcBatchItemWriter<Credentials> writer1, JdbcCursorItemReader<Credentials> reader) {
         return stepBuilderFactory.get("step1")
                 .<Credentials, Credentials>chunk(4)
                 .reader(reader)
-                .writer(writer2)
+                .writer(writer1)
                 .build();
     }
 
     @Bean
-    public Step step2(JdbcBatchItemWriter<Credentials> writer1, JdbcCursorItemReader<Credentials> reader) {
+    public Step step2(JdbcBatchItemWriter<Credentials> writer2, JdbcCursorItemReader<Credentials> reader) {
         return stepBuilderFactory.get("step2")
                 .<Credentials, Credentials>chunk(4)
                 .reader(reader)
                 .processor(processor())
-                .writer(writer1)
+                .writer(writer2)
                 .build();
     }
 
