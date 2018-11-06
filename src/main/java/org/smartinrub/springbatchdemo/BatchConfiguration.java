@@ -6,12 +6,12 @@ import org.springframework.batch.core.Step;
 import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
-import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.item.database.BeanPropertyItemSqlParameterSourceProvider;
 import org.springframework.batch.item.database.JdbcBatchItemWriter;
 import org.springframework.batch.item.database.JdbcCursorItemReader;
 import org.springframework.batch.item.database.builder.JdbcBatchItemWriterBuilder;
 import org.springframework.batch.item.database.builder.JdbcCursorItemReaderBuilder;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.RowMapper;
@@ -25,19 +25,30 @@ import java.sql.SQLException;
 @AllArgsConstructor
 public class BatchConfiguration {
 
-    private static final String SQL_SELECT_QUERY = "SELECT * FROM credentials";
-    private static final String SQL_UPDATE_QUERY = "UPDATE credentials SET password = :password WHERE id = :id ";
-    private static final String SQL_INSERT_QUERY = "INSERT INTO credentials_backup VALUES(:id, :password)";
+    private static final String SQL_SELECT_CREDENTIALS_QUERY = "SELECT * FROM credentials";
+    private static final String SQL_SELECT_CREDENTIALS_BACKUP_QUERY = "SELECT * FROM credentials_backup";
+    private static final String SQL_UPDATE_CREDENTIALS_QUERY = "UPDATE credentials SET password = :password WHERE id = :id ";
+    private static final String SQL_INSERT_CREDENTIALS_BACKUP_QUERY = "INSERT INTO credentials_backup VALUES(:id, :password)";
 
     private final JobBuilderFactory jobBuilderFactory;
     private final StepBuilderFactory stepBuilderFactory;
 
     @Bean
-    public JdbcCursorItemReader<Credentials> reader(DataSource dataSource) {
+    public JdbcCursorItemReader<Credentials> credentialsTableReader(DataSource dataSource) {
         return new JdbcCursorItemReaderBuilder<Credentials>()
-                .name("credentialsReader")
+                .name("credentialsTableReader")
                 .dataSource(dataSource)
-                .sql(SQL_SELECT_QUERY)
+                .sql(SQL_SELECT_CREDENTIALS_QUERY)
+                .rowMapper(new CredentialsRowMapper())
+                .build();
+    }
+
+    @Bean
+    public JdbcCursorItemReader<Credentials> rollBackTableReader(DataSource dataSource) {
+        return new JdbcCursorItemReaderBuilder<Credentials>()
+                .name("rollBackTableReader")
+                .dataSource(dataSource)
+                .sql(SQL_SELECT_CREDENTIALS_BACKUP_QUERY)
                 .rowMapper(new CredentialsRowMapper())
                 .build();
     }
@@ -51,7 +62,7 @@ public class BatchConfiguration {
     public JdbcBatchItemWriter<Credentials> writer1(DataSource dataSource) {
         return new JdbcBatchItemWriterBuilder<Credentials>()
                 .itemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<>())
-                .sql(SQL_INSERT_QUERY)
+                .sql(SQL_INSERT_CREDENTIALS_BACKUP_QUERY)
                 .dataSource(dataSource)
                 .build();
     }
@@ -60,24 +71,31 @@ public class BatchConfiguration {
     public JdbcBatchItemWriter<Credentials> writer2(DataSource dataSource) {
         return new JdbcBatchItemWriterBuilder<Credentials>()
                 .itemSqlParameterSourceProvider(new BeanPropertyItemSqlParameterSourceProvider<>())
-                .sql(SQL_UPDATE_QUERY)
+                .sql(SQL_UPDATE_CREDENTIALS_QUERY)
                 .dataSource(dataSource)
                 .build();
     }
 
-@Bean
-public Job credentialsJob(JobCompletionNotificationListener listener, Step step1, Step step2) {
-    return jobBuilderFactory.get("credentialsJob")
-            .incrementer(new RunIdIncrementer())
-            .listener(listener)
-            .start(step1)
-            .next(step2)
-            .preventRestart()
-            .build();
-}
+    @Bean
+    public Job hashJob(JobMigrationListener listener, Step step1, Step step2) {
+        return jobBuilderFactory.get("hashJob")
+                .listener(listener)
+                .start(step1)
+                .next(step2)
+                .build();
+    }
 
     @Bean
-    public Step step1(JdbcBatchItemWriter<Credentials> writer1, JdbcCursorItemReader<Credentials> reader) {
+    public Job rollBackJob(JobRollBackListener listener, Step step3) {
+        return jobBuilderFactory.get("rollBackJob")
+                .listener(listener)
+                .flow(step3)
+                .end()
+                .build();
+    }
+
+    @Bean
+    public Step step1(JdbcBatchItemWriter<Credentials> writer1, @Qualifier("credentialsTableReader") JdbcCursorItemReader<Credentials> reader) {
         return stepBuilderFactory.get("step1")
                 .<Credentials, Credentials>chunk(4)
                 .reader(reader)
@@ -86,11 +104,20 @@ public Job credentialsJob(JobCompletionNotificationListener listener, Step step1
     }
 
     @Bean
-    public Step step2(JdbcBatchItemWriter<Credentials> writer2, JdbcCursorItemReader<Credentials> reader) {
+    public Step step2(JdbcBatchItemWriter<Credentials> writer2, @Qualifier("credentialsTableReader") JdbcCursorItemReader<Credentials> reader) {
         return stepBuilderFactory.get("step2")
                 .<Credentials, Credentials>chunk(4)
                 .reader(reader)
                 .processor(processor())
+                .writer(writer2)
+                .build();
+    }
+
+    @Bean
+    public Step step3(JdbcBatchItemWriter<Credentials> writer2, @Qualifier("rollBackTableReader") JdbcCursorItemReader<Credentials> reader) {
+        return stepBuilderFactory.get("step2")
+                .<Credentials, Credentials>chunk(4)
+                .reader(reader)
                 .writer(writer2)
                 .build();
     }

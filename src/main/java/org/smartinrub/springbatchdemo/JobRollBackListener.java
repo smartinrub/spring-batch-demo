@@ -11,28 +11,21 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @AllArgsConstructor
-public class JobCompletionNotificationListener extends JobExecutionListenerSupport {
+public class JobRollBackListener extends JobExecutionListenerSupport {
 
     private static final String SQL_SELECT_CREDENTIALS = "SELECT * FROM credentials";
-    private static final String SQL_SELECT_CREDENTIALS_BACKUP = "SELECT * FROM credentials_backup";
     private final JdbcTemplate jdbcTemplate;
 
     @Override
     public void afterJob(JobExecution jobExecution) {
         if(jobExecution.getStatus() == BatchStatus.COMPLETED) {
-            log.info("HASHING IS DONE!!!");
+            log.info("ROLLBACK IS DONE!!!");
 
             jdbcTemplate.query(SQL_SELECT_CREDENTIALS,
                     (rs, row) -> new Credentials(
                             rs.getString(1),
                             rs.getString(2))
-            ).forEach(credentials -> log.info("New credentials -> " + credentials));
-
-            jdbcTemplate.query(SQL_SELECT_CREDENTIALS_BACKUP,
-                    (rs, row) -> new Credentials(
-                            rs.getString(1),
-                            rs.getString(2))
-            ).forEach(credentials -> log.info("Backup credentials -> " + credentials));
+            ).forEach(credentials -> log.info("Credentials -> " + credentials));
         }
     }
 }
